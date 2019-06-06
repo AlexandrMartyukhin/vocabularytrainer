@@ -1,8 +1,14 @@
 package ru.minilan.vocabularytrainer;
 
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.support.v4.view.GravityCompat;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -13,24 +19,76 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
+
+    private static final String KEYAPI = "trnsl.1.1.20190604T083938Z.ccae0317394f913d.1f3ce33ba505571cedd60a5dc251e81be0c19234";
+    private WordsAdapter wordsAdapter;
+    private YandexTranslate translater;
+    private EditText editTextWord1,editTextWord2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+
+        initFAB();
+        initNaviDrawerAndToolbar();
+        initRecyclerView();
+        initRetrofit();
+
+        refreshWordList();
+    }
+
+    private void refreshWordList() {
+        ArrayList<WordCard> list = DatabaseHelper.getInstance(this).query();
+        wordsAdapter.setWords(list);
+    }
+
+    private void initRecyclerView() {
+        RecyclerView recyclerViewWordsList = findViewById(R.id.recyclerViewWordsList);
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+        recyclerViewWordsList.setLayoutManager(linearLayoutManager);
+        wordsAdapter = new WordsAdapter();
+        wordsAdapter.setOnMenuItemClickListener(new WordsAdapter.OnMenuItemClickListener() {
             @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+            public void onItemEditClick(WordCard wordCard) {
+                editElement(wordCard);
+            }
+
+            @Override
+            public void onItemDeleteClick(WordCard wordCard) {
+                deleteElement(wordCard);
             }
         });
+        recyclerViewWordsList.setAdapter(wordsAdapter);
+    }
+
+    private void deleteElement(WordCard wordCard) {
+        DatabaseHelper.getInstance(MainActivity.this).deleteWord(wordCard);
+        refreshWordList();
+    }
+
+    private void editElement(WordCard wordCard) {
+        // TO DO
+    }
+
+    private void initNaviDrawerAndToolbar() {
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         NavigationView navigationView = findViewById(R.id.nav_view);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -38,6 +96,45 @@ public class MainActivity extends AppCompatActivity
         drawer.addDrawerListener(toggle);
         toggle.syncState();
         navigationView.setNavigationItemSelectedListener(this);
+    }
+
+    private void initFAB() {
+        FloatingActionButton fab = findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                LayoutInflater layoutInflater = LayoutInflater.from(MainActivity.this);
+                final View alertView = layoutInflater.inflate(R.layout.layout_add_word, null);
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setView(alertView);
+                editTextWord1 = alertView.findViewById(R.id.editTextWord1);
+                editTextWord2 = alertView.findViewById(R.id.editTextWord2);
+                builder.setTitle(R.string.alert_title_add);
+                builder.setNeutralButton("AUTO Translate", null);
+                builder.setNegativeButton(R.string.alert_cancel, null);
+                builder.setPositiveButton(R.string.add, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int id) {
+
+                        DatabaseHelper.getInstance(MainActivity.this)
+                                .addWord(editTextWord1.getText().toString(), editTextWord2.getText().toString());
+                        refreshWordList();
+                    }
+                });
+
+                final AlertDialog dialog = builder.create();
+                dialog.show();
+                // override neutral button
+                dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Toast.makeText(MainActivity.this, "translating...", Toast.LENGTH_SHORT).show();
+                        requestRetrofit("en-ru",editTextWord1.getText().toString(),KEYAPI);
+                    }
+                });
+            }
+        });
     }
 
     @Override
@@ -96,4 +193,33 @@ public class MainActivity extends AppCompatActivity
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
+
+    private void initRetrofit() {
+        Retrofit retrofit;
+        retrofit = new Retrofit.Builder()
+                .baseUrl("https://translate.yandex.net/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        translater = retrofit.create(YandexTranslate.class);
+    }
+
+    private void requestRetrofit(String lang, String wordToTranlate, String keyApi) {
+        translater.translate(lang, wordToTranlate, keyApi)
+                .enqueue(new Callback<Translate>() {
+                    @Override
+                    public void onResponse(Call<Translate> call, Response<Translate> response) {
+                        if (response.body() != null) {
+                            editTextWord2.setText(response.body().getText().get(0));
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<Translate> call, Throwable t) {
+                        Log.i("Mylogtag","onfailure "+t.toString());
+                    }
+                });
+
+    }
+
+
 }
