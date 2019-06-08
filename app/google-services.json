@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "11024534863",
+    "firebase_url": "https://vocabularytrainer-4c254.firebaseio.com",
+    "project_id": "vocabularytrainer-4c254",
+    "storage_bucket": "vocabularytrainer-4c254.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:11024534863:android:621f0c886a4cd8c7",
+        "android_client_info": {
+          "package_name": "ru.minilan.vocabularytrainer"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "11024534863-o94i6ndhenhf69knvm3s82qn9tmt837v.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAbV5fDelTil5OmPG1FcTD6CXMuazjecdY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "11024534863-o94i6ndhenhf69knvm3s82qn9tmt837v.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
