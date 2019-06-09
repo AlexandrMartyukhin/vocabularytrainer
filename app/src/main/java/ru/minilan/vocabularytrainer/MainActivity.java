@@ -2,6 +2,7 @@ package ru.minilan.vocabularytrainer;
 
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AlertDialog;
@@ -23,6 +24,11 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,13 +38,16 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
+import static android.webkit.ConsoleMessage.MessageLevel.LOG;
+
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private static final String KEYAPI = "trnsl.1.1.20190604T083938Z.ccae0317394f913d.1f3ce33ba505571cedd60a5dc251e81be0c19234";
     private WordsAdapter wordsAdapter;
     private YandexTranslate translater;
-    private EditText editTextWord1,editTextWord2;
+    private EditText editTextWord1, editTextWord2;
+    public static final String MYLOGTAG = "MYLOGTAG";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +60,24 @@ public class MainActivity extends AppCompatActivity
         initRetrofit();
 
         refreshWordList();
+        initFirebase();
+    }
+
+    private void initFirebase() {
+
+        FirebaseInstanceId.getInstance().getInstanceId()
+                .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<InstanceIdResult> task) {
+                        if (!task.isSuccessful()) {
+                            Log.e(MYLOGTAG, "firebase getInstance onComplete failed");
+                        }
+                        String token = task.getResult().getToken();
+                        Log.i(MYLOGTAG, " Our token = " + token);
+                    }
+                });
+
+
     }
 
     private void refreshWordList() {
@@ -130,7 +157,7 @@ public class MainActivity extends AppCompatActivity
                     @Override
                     public void onClick(View v) {
                         Toast.makeText(MainActivity.this, "translating...", Toast.LENGTH_SHORT).show();
-                        requestRetrofit("en-ru",editTextWord1.getText().toString(),KEYAPI);
+                        requestRetrofit("en-ru", editTextWord1.getText().toString(), KEYAPI);
                     }
                 });
             }
@@ -215,7 +242,7 @@ public class MainActivity extends AppCompatActivity
 
                     @Override
                     public void onFailure(Call<Translate> call, Throwable t) {
-                        Log.i("Mylogtag","onfailure "+t.toString());
+                        Log.i(MYLOGTAG, "onfailure " + t.toString());
                     }
                 });
 

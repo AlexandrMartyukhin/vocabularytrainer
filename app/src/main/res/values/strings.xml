@@ -20,4 +20,5 @@
     <string name="alert_title_add">Add word</string>
     <string name="alert_cancel">Cancel</string>
     <string name="add">Add</string>
+    <string name="new_words_ready">New words ready to download</string>
 </resources>
